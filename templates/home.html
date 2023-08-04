@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="blue">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gitgpt</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-qOwBhGxHTA+TkYp5z5iKjXnhh46Kn/vj1eNyyJL8w+56/ImaK2fZdYjNzN7I9F+y1UJ7VjGnHn2wVUgS6GRM7A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container-fluid" >
+        <br>
+            <h1 class="p-3 offset-md-1">Welcome to Gitgpt!</h1>
+        <br>
+        <div class="row justify-content-between">
+            <div class="col-md-3 offset-md-2">
+                <form id="name-form" class="text-left" method="POST" action="{{ url_for('handle_form') }}">
+                    <div class="form-group">
+                        <label for="name" class="form-label">Repository name:</label>
+                        <input type="text" class="form-control" id="name" name="name" aria-describedby="repoHelp" placeholder="username/repositoryname">
+                        <div id="repoHelp" class="form-text">Enter the Username and name of the public repository</div>
+                    </div>
+                    <br>
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                        <button id="dis" type="button" onclick="generateReadme()" class="btn btn-outline-secondary" disabled >Generate ReadMe</button>
+                    <br><br>
+                </form>
+                <br>
+                <div id="loading-text" style="display: none;">Loading...</div>
+                <br>
+                <div id="list-container">{{ my_html_content|safe }}</div>
+                  
+            </div>
+            <div class="col">
+                <h3 class="offset-md-2">ReadMe: </h3>
+                <br>
+                <div class="text-center">
+                    <textarea id="result" rows="20" cols="60"></textarea>
+                    
+                </div>
+                <br>
+                <button id="download" type="button" class="btn btn-primary offset-md-2" disabled >Download</button>
+                <button id="preview" type="button" class="btn btn-primary" disabled >Preview</button>
+            </div>
+            <!-- <button id="chat-icon" onclick="toggleChat()">Open chat</button> -->
+        </div>
+
+        <div id="chat-widget">
+            <div id="chat-header">
+              <h3>Chat</h3>
+              <button id="chat-close-btn">X</button>
+            </div>
+            <div id="chat-body">
+              <p>Welcome to gitgpt!</p>
+            </div>
+            <div id="chat-footer">
+              <input type="text" placeholder="Type your message...">
+              <button id="chat-send-btn" >Send</button>
+            </div>
+        </div>
+          
+        <div class="chat-button">
+            <button class="btn btn-primary" id="chat-icon" onclick="toggleChat()">Open chat</button>
+        </div>
+          
+    </div>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js" integrity="sha384-zYPOMqeu1DAVkHiLqWBUTcbYfZ8osu1Nd6Z89ify25QV9guujx43ITvfi12/QExE" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.min.js" integrity="sha384-Y4oOpwW3duJdCWv5ly8SCFYWqFDsfob/3GkgExXKV4idmbt98QcxXYs9UoXAB7BZ" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+    const resultTextarea = document.getElementById("result");
+    const downloadBtn = document.getElementById("download");
+    $(document).ready(function() {
+        $('#dis').prop('disabled', true);
+        $('#result').val("");
+        $('#download').prop('disabled', true);
+        $('#preview').prop('disabled', true);
+    });
+    $(document).on('click', 'li.directory',function() {
+        $('li.directory').click(function(event) {
+            event.stopPropagation();
+            $(this).toggleClass('open');
+            });
+    });
+    function generateReadme() {
+        document.getElementById("loading-text").style.display = "block";
+    $.ajax({
+        url: '/generateReadme', // The URL of your Flask function
+        type: 'POST', // The HTTP method
+        success: function(response) {
+            if (response.md.length > 0){
+                document.getElementById("loading-text").style.display = "none";
+                $('#result').val(response.md);
+                $('#download').prop('disabled', false);
+                $('#preview').prop('disabled', false);
+            }
+            
+        // Handle the response from the server
+        },
+        error: function(error) {
+            $('#result').val(error);
+        }
+    });
+    }
+    $('#result').on('input', function() {
+        if ($(this).val().length > 0) {
+            $('#download').prop('disabled', false);
+            $('#preview').prop('disabled', false);
+        } else {
+            $('#download').prop('disabled', true);
+            $('#preview').prop('disabled', true);
+        }
+    });
+    downloadBtn.addEventListener("click", function() {
+        const text = resultTextarea.value;
+        const filename = "text.txt";
+        const blob = new Blob([text], {type: "text/plain;charset=utf-8"});
+        // saveAs(blob, filename);
+    });
+    const convertBtn = document.getElementById('preview');
+    convertBtn.addEventListener('click', function() {
+        let html = "";
+        
+        console.log("I'm clicked");
+        const text = resultTextarea.value;
+        $.ajax({
+        url: '/convertMd2Html', // The URL of your Flask function
+        type: 'POST', // The HTTP method
+        data: {'text': text},
+        success: function(response) {
+            console.log(response);
+            html = response.html
+            console.log(html);
+            const newTab = window.open();
+        // Write custom HTML content to the new window or tab
+            newTab.document.write("<html><body>"+html+"</body></html>");
+        // Handle the response from the server
+        },
+        error: function(error) {
+        }
+    });
+  
+        
+    });
+    $(function() {
+        $('#name-form').submit(function(event) {
+            event.preventDefault(); // prevent form from submitting normally
+            var form = $('#name-form')[0];
+            var formData = new FormData(form);
+            $.ajax({
+                url: '/handle_form',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $('#name').val('');
+                    $("#list-container").append(response.list);
+                    $('#dis').removeAttr("disabled");
+                }
+            });
+        });
+    });
+    const chatWidget = document.getElementById('chat-widget');
+    const chatIcon = document.getElementById('chat-icon');
+    const chatCloseBtn = document.getElementById('chat-close-btn');
+
+    function toggleChat() {
+    if (chatWidget.style.display === 'none'|| chatWidget.style.display.length === 0) {
+        chatWidget.style.display = 'block';
+    } else {
+        chatWidget.style.display = 'none';
+    }
+    }
+
+    // chatIcon.addEventListener('click', toggleChat);
+    chatCloseBtn.addEventListener('click', toggleChat);
+
+    const chatInput = document.querySelector('#chat-footer input');
+    const chatSendBtn = document.querySelector('#chat-footer button');
+    const chatBody = document.querySelector('#chat-body');
+
+    function sendMessage() {
+    const message = chatInput.value;
+    const chatMessage = document.createElement('p');
+    chatMessage.innerText = message;
+    chatBody.appendChild(chatMessage);
+    chatInput.value = '';
+    }
+
+    chatSendBtn.addEventListener('click', sendMessage);
+</script>
+</body>
+</html>

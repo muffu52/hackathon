@@ -1,0 +1,15 @@
+body {
+    width: 200px;
+    padding: 10px;
+  }
+  
+  button#launchButton {
+    background-color: blue;
+    color: white;
+  }
+  
+  body {
+    background-image: url('icons/icon.png');
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
